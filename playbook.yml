@@ -1,0 +1,46 @@
+# Install nickjj.docker role first.
+# ansible-galaxy install -r requirements.yml -p roles
+
+---
+- hosts: ust_vm
+  become: true
+  roles:
+    - nickjj.docker
+
+  tasks:
+  - name: Copy source files
+    become: false
+    synchronize:
+        src: .
+        dest: "{{ ansible_user_dir }}"
+
+  - name: Start nodejs application and webserver
+    shell: docker-compose up --build -d
+    args:
+        chdir: "{{ ansible_user_dir }}/docker-nodejs-mongodb"
+  
+  - name: Check containers status
+    shell: docker-compose ps
+    args:
+        chdir: "{{ ansible_user_dir }}/docker-nodejs-mongodb"
+
+  # - name: Download stackdriver's agents
+  #   get_url:
+  #     url: "{{ item }}"
+  #     dest: "{{ ansible_user_dir }}"
+  #   loop:
+  #     - "https://dl.google.com/cloudagents/install-monitoring-agent.sh"
+  #     - "https://dl.google.com/cloudagents/install-logging-agent.sh"
+  
+  # - name: Install stackdriver's agents
+  #   script: "{{ ansible_user_dir }}/{{ item }}"
+  #   args:
+  #     executable: /bin/bash
+  #   loop:
+  #     - "install-monitoring-agent.sh"
+  #     - "install-logging-agent.sh"
+
+  - name: Restart Stackdriver Service
+    service:
+      name: stackdriver-agent
+      state: restarted
